@@ -125,6 +125,21 @@ if a:bang == ''
 endif
 endfunction
 
+function! IncludePath(path)
+	" define delimiter depends on platform
+	if has('win16') || has('win32') || has('win64')
+		let delimiter = ";"
+	else
+		let delimiter = ":"
+	endif
+	let pathlist = split($PATH, delimiter)
+	if isdirectory(a:path) && index(pathlist, a:path) ==-1
+		let $PATH=a:path.delimiter.$PATH
+	endif
+endfunction
+" ~/.pyenv/shims を $PATH に追加する
+" " これを行わないとpythonが正しく検索されない
+"IncludePath(expand("~/.pyenv/shims"))
 let PATH = expand("~/.pyenv/shims") . ":" . $PATH
 
 """NeoBundle setup
@@ -138,7 +153,66 @@ call neobundle#begin(expand('~/.vim/bundle/'))
 " NeoBundle自身をNeoBundleで管理させる
 NeoBundleFetch 'Shougo/neobundle.vim'
 
-NeoBundle 'davidhalter/jedi-vim'
+NeoBundle "nathanaelkane/vim-indent-guides"
+let s:hooks = neobundle#get_hooks("vim-indent-guides")
+function! s:hooks.on_source(bundle)
+	let g:indent_guides_guide_size = 1
+endfunction
+
+NeoBundle 'tpope/vim-surround'
+NeoBundle 'vim-scripts/Align'
+NeoBundle 'vim-scripts/YankRing.vim'
+
+NeoBundleLazy "Shougo/neosnippet.vim", {
+      \ "depends": ["honza/vim-snippets"],
+      \ "autoload": {
+      \   "insert": 1,
+      \ }}
+
+NeoBundleLazy "Shougo/vimfiler", {
+      \ "depends": ["Shougo/unite.vim"],
+      \ "autoload": {
+      \   "commands": ["VimFilerTab", "VimFiler", "VimFilerExplorer"],
+      \   "mappings": ['<Plug>(vimfiler_switch)'],
+      \   "explorer": 1,
+      \ }}
+nnoremap <Leader>e :VimFilerExplorer<CR>
+autocmd MyAutoCmd BufEnter * if (winnr('$') == 1 && &filetype ==# 'vimfiler') | q | endif
+let s:hooks = neobundle#get_hooks("vimfiler")
+function! s:hooks.on_source(bundle)
+	let g:vimfiler_as_default_explorer = 1
+	let g:vimfiler_enable_auto_cd = 1
+	let g:vimfiler_ignore_pattern = "\%(^\..*\|\.pyc$\)"
+	autocmd MyAutoCmd FileType vimfiler call s:vimfiler_settings()
+	function! s:vimfiler_settings()
+		nmap <buffer> ^^ <Plug>(vimfiler_switch_to_parent_directory)
+		nmap <buffer> R <Plug>(vimfiler_redraw_screen)
+		nmap <buffer> <C-l> <C-w>l
+	endfunction
+endfunction
+
+NeoBundleLazy "davidhalter/jedi-vim", {
+      \ "autoload": {
+      \   "filetypes": ["python", "python3", "djangohtml"],
+      \ },
+      \ "build": {
+      \   "mac": "pip install jedi",
+      \   "unix": "pip install jedi",
+      \ }}
+let s:hooks = neobundle#get_hooks("jedi-vim")
+function! s:hooks.on_source(bundle)
+	 " jediにvimの設定を任せると'completeopt+=preview'するので
+	 " 自動設定機能をOFFにし手動で設定を行う
+	 let g:jedi#auto_vim_configuration = 0
+  " 補完の最初の項目が選択された状態だと使いにくいためオフにする
+	 let g:jedi#popup_select_first = 0
+	 " quickrunと被るため大文字に変更
+	 let g:jedi#rename_command = '<Leader>R'
+     " gundoと被るため大文字に変更 (2013-06-24 10:00 追記）
+	 let g:jedi#goto_command = '<Leader>G'
+endfunction
+NeoBundleLazy 'Shougo/neocomplete.vim', {
+    \ "autoload": {"insert": 1}}
 
 NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "depends": ['davidhalter/jedi-vim'],
