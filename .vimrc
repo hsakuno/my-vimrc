@@ -4,6 +4,8 @@ augroup MyAutoCmd
 augroup END
 
 syntax on
+colorscheme molokai
+set t_Co=256
 set ruler
 set title
 set wildmenu
@@ -53,6 +55,8 @@ set novisualbell
 " デフォルト不可視文字は美しくないのでUnicodeで綺麗に
 set listchars=tab:»-,trail:-,extends:»,precedes:«,nbsp:%,eol:↲
 
+" テンプレート
+autocmd BufNewFile *.py 0r $HOME/.vim/template/python.txt
 """マクロ、キー設定
 " 入力モード中に素早くjjと入力した場合はESCとみなす
 inoremap jj <Esc>
@@ -93,7 +97,8 @@ nnoremap <silent> [toggle]s :setl spell!<CR>:setl spell?<CR>
 nnoremap <silent> [toggle]l :setl list!<CR>:setl list?<CR>
 nnoremap <silent> [toggle]t :setl expandtab!<CR>:setl expandtab?<CR>
 nnoremap <silent> [toggle]w :setl wrap!<CR>:setl wrap?<CR>
-
+"空行を挿入
+nnoremap O :<C-u>call append(expand('.'), '')<Cr>j
 " make, grep などのコマンド後に自動的にQuickFixを開く
 autocmd MyAutoCmd QuickfixCmdPost make,grep,grepadd,vimgrep copen
 
@@ -159,9 +164,22 @@ function! s:hooks.on_source(bundle)
 	let g:indent_guides_guide_size = 1
 endfunction
 
+
 NeoBundle 'tpope/vim-surround'
 NeoBundle 'vim-scripts/Align'
 NeoBundle 'vim-scripts/YankRing.vim'
+
+NeoBundleLazy "thinca/vim-quickrun", {
+      \ "autoload": {
+      \   "mappings": [['nxo', '<Plug>(quickrun)']]
+      \ }}
+nmap <Leader>r <Plug>(quickrun)
+let s:hooks = neobundle#get_hooks("vim-quickrun")
+function! s:hooks.on_source(bundle)
+	let g:quickrun_config = {
+				\ "*": {"runner": "remote/vimproc"},
+				\ }
+endfunction
 
 NeoBundleLazy "Shougo/neosnippet.vim", {
       \ "depends": ["honza/vim-snippets"],
@@ -211,13 +229,20 @@ function! s:hooks.on_source(bundle)
      " gundoと被るため大文字に変更 (2013-06-24 10:00 追記）
 	 let g:jedi#goto_command = '<Leader>G'
 endfunction
+" jedi-vimの補完時に関数の説明を別ウィンドウで表示しないようにする
+autocmd FileType python setlocal completeopt-=preview
 NeoBundleLazy 'Shougo/neocomplete.vim', {
     \ "autoload": {"insert": 1}}
+" Djangoを正しくVimで読み込めるようにする
+NeoBundleLazy "lambdalisue/vim-django-support", {
+      \ "autoload": {
+      \   "filetypes": ["python", "python3", "djangohtml"]
+      \ }}
 
 NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "depends": ['davidhalter/jedi-vim'],
       \ "autoload": {
-      \   "filetypes": ["python", "python3"]
+      \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
 
 " 終了
