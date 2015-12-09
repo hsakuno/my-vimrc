@@ -231,6 +231,7 @@ function! s:hooks.on_source(bundle)
 endfunction
 " jedi-vimの補完時に関数の説明を別ウィンドウで表示しないようにする
 autocmd FileType python setlocal completeopt-=preview
+autocmd VimEnter * VimFiler -split -simple -winwidth=30 -no-quit
 NeoBundleLazy 'Shougo/neocomplete.vim', {
     \ "autoload": {"insert": 1}}
 " Djangoを正しくVimで読み込めるようにする
@@ -244,7 +245,6 @@ NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "autoload": {
       \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
-
 " 終了
 call neobundle#end()
 
