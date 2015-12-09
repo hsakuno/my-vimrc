@@ -7,8 +7,10 @@ pythonの統合開発環境（っぽい）をvimで構築する。
 vim7.3では補完が出ないため、vim7.4にアップデート  
 
 ```
+$ vim --version
 $ brew install vim --with-python3  
-$ source ~/.bash_profile
+$ source ~/.bash_profile  
+$ vim --version
 ``` 
 
 ### クローン  
@@ -53,6 +55,8 @@ Spotlight検索のショートカットをオフ
 #### PyEnvのバージョンを読み込む  
 vim内で  
 :PyenvActivate dataAnalysis3.3.6  
+※tab補完が効くので、Py[tab], data[tab]でok  
+
 #### ファイルエクスプローラへ移動  
 Ctrl+h,l  
 
