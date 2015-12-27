@@ -57,6 +57,7 @@ set listchars=tab:»-,trail:-,extends:»,precedes:«,nbsp:%,eol:↲
 
 " テンプレート
 autocmd BufNewFile *.py 0r $HOME/.vim/template/python.txt
+autocmd BufNewFile *.sh 0r $HOME/.vim/template/shell.txt
 """マクロ、キー設定
 " 入力モード中に素早くjjと入力した場合はESCとみなす
 inoremap jj <Esc>
@@ -75,6 +76,9 @@ nnoremap g# g#zz
 " j, k による移動を折り返されたテキストでも自然に振る舞うように変更
 nnoremap j gj
 nnoremap k gk
+" Yで行末までヤンク
+nnoremap Y y$
+
 " vを二回で行末まで選択
 vnoremap v $h
 " TABにて対応ペアにジャンプ
@@ -85,6 +89,12 @@ nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
+" 括弧を補完
+inoremap { {}<LEFT>
+inoremap [ []<LEFT>
+inoremap ( ()<LEFT>
+inoremap " ""<LEFT>
+inoremap ' ''<LEFT>
 " Shift + 矢印でウィンドウサイズを変更
 nnoremap <S-Left>  <C-w><<CR>
 nnoremap <S-Right> <C-w>><CR>
@@ -97,8 +107,6 @@ nnoremap <silent> [toggle]s :setl spell!<CR>:setl spell?<CR>
 nnoremap <silent> [toggle]l :setl list!<CR>:setl list?<CR>
 nnoremap <silent> [toggle]t :setl expandtab!<CR>:setl expandtab?<CR>
 nnoremap <silent> [toggle]w :setl wrap!<CR>:setl wrap?<CR>
-"空行を挿入
-nnoremap O :<C-u>call append(expand('.'), '')<Cr>j
 " make, grep などのコマンド後に自動的にQuickFixを開く
 autocmd MyAutoCmd QuickfixCmdPost make,grep,grepadd,vimgrep copen
 
@@ -117,6 +125,16 @@ function! s:mkdir(dir, force)
 endfunction
 autocmd MyAutoCmd BufWritePre * call s:mkdir(expand('<afile>:p:h'), v:cmdbang)
 
+" インサートモードを抜けると自動的に英数入力にする
+if executable('osascript')
+let s:keycode_jis_eisuu = 102
+let g:force_alphanumeric_input_command = "osascript -e 'tell application \"System Events\" to key code " . s:keycode_jis_eisuu . "' &"
+
+inoremap <silent> <Esc> <Esc>:call system(g:force_alphanumeric_input_command)<CR>
+
+autocmd! FocusGained *
+	\ call system(g:force_alphanumeric_input_command)
+endif
 " vim 起動時のみカレントディレクトリを開いたファイルの親ディレクトリに指定
 autocmd MyAutoCmd VimEnter * call s:ChangeCurrentDir('', '')
 function! s:ChangeCurrentDir(directory, bang)
@@ -169,23 +187,38 @@ NeoBundle 'tpope/vim-surround'
 NeoBundle 'vim-scripts/Align'
 NeoBundle 'vim-scripts/YankRing.vim'
 
-NeoBundleLazy "thinca/vim-quickrun", {
-      \ "autoload": {
-      \   "mappings": [['nxo', '<Plug>(quickrun)']]
-      \ }}
-nmap <Leader>r <Plug>(quickrun)
-let s:hooks = neobundle#get_hooks("vim-quickrun")
-function! s:hooks.on_source(bundle)
-	let g:quickrun_config = {
-				\ "*": {"runner": "remote/vimproc"},
-				\ }
-endfunction
+"NeoBundleLazy "thinca/vim-quickrun", {
+"      \ "autoload": {
+"      \   "mappings": [['nxo', '<Plug>(quickrun)']]
+"      \ }}
+"nmap <Leader>r <Plug>(quickrun)
+"let s:hooks = neobundle#get_hooks("vim-quickrun")
+"function! s:hooks.on_source(bundle)
+"	let g:quickrun_config = {
+"				\ "*": {"runner": "remote/vimproc"},
+"				\ }
+"endfunction
 
-NeoBundleLazy "Shougo/neosnippet.vim", {
-      \ "depends": ["honza/vim-snippets"],
-      \ "autoload": {
-      \   "insert": 1,
-      \ }}
+NeoBundle "honza/vim-snippets"
+NeoBundle "Shougo/neosnippet.vim"
+" Plugin key-mappings.
+ imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+ smap <C-k>     <Plug>(neosnippet_expand_or_jump)
+ xmap <C-k>     <Plug>(neosnippet_expand_target)
+
+" SuperTab like snippets behavior.
+imap <expr><TAB> neosnippet#expandable_or_jumpable() ?
+  \ "\<Plug>(neosnippet_expand_or_jump)"
+  \: pumvisible() ? "\<C-n>" : "\<TAB>"
+smap <expr><TAB> neosnippet#expandable_or_jumpable() ?
+  \ "\<Plug>(neosnippet_expand_or_jump)"
+  \: "\<TAB>"
+
+NeoBundle "Shougo/neosnippet-snippets"
+" For snippet_complete marker.
+if has('conceal')
+	set conceallevel=2 concealcursor=i
+endif
 
 NeoBundleLazy "Shougo/vimfiler", {
       \ "depends": ["Shougo/unite.vim"],
@@ -244,7 +277,32 @@ NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "autoload": {
       \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
-
+NeoBundle "thinca/vim-quickrun"
+NeoBundle "Shougo/vimproc"
+NeoBundle "osyo-manga/shabadou.vim"
+NeoBundle "osyo-manga/vim-watchdogs"
+" シンタックスチェック後にquickfixを閉じる
+let g:quickrun_config = {
+\   "watchdogs_checker/_" : {
+\       "hook/close_quickfix/enable_exit" : 1,
+\   },
+\}
+"call watchdogs#setup(g:quickrun_config)
+" エラー行をハイライト
+NeoBundle "jceb/vim-hier"
+" エラーメッセージ表示
+NeoBundle "dannyob/quickfixstatus"
+" 畳み込み
+NeoBundleLazy "vim-scripts/python_fold", {
+    \ "autoload": { "filetypes": [ "python", "python3", "djangohtml"] }}
+" 書き込み後にシンタックスチェックを行う
+let g:watchdogs_check_BufWritePost_enable = 1
+" 一定時間キー入力がなかった場合にシンタックスチェックを行う
+let g:watchdogs_check_CursorHold_enable = 1
+" 新しいタブを開いてファイルを編集(vimFiler)
+""let g:vimfiler_edit_action = 'tabopen'
+" vimFilterをウィンドウ幅30で開く
+autocmd VimEnter * VimFiler -split -simple -winwidth=30 -no-quit
 " 終了
 call neobundle#end()
 
