@@ -4,7 +4,7 @@ augroup MyAutoCmd
 augroup END
 
 syntax on
-colorscheme molokai
+colorscheme zenburn
 set t_Co=256
 set ruler
 set title
@@ -264,7 +264,6 @@ function! s:hooks.on_source(bundle)
 endfunction
 " jedi-vimの補完時に関数の説明を別ウィンドウで表示しないようにする
 autocmd FileType python setlocal completeopt-=preview
-autocmd VimEnter * VimFiler -split -simple -winwidth=30 -no-quit
 NeoBundleLazy 'Shougo/neocomplete.vim', {
     \ "autoload": {"insert": 1}}
 " Djangoを正しくVimで読み込めるようにする
@@ -290,7 +289,10 @@ let g:quickrun_config = {
 \}
 "call watchdogs#setup(g:quickrun_config)
 " エラー行をハイライト
-NeoBundle "jceb/vim-hier"
+NeoBundle "cohama/vim-hier"
+if has("gui_running")
+	highlight SpellBad term=underline gui=undercurl guisp=Orange 
+endif
 " エラーメッセージ表示
 NeoBundle "dannyob/quickfixstatus"
 " 畳み込み
@@ -304,6 +306,9 @@ let g:watchdogs_check_CursorHold_enable = 1
 ""let g:vimfiler_edit_action = 'tabopen'
 " vimFilterをウィンドウ幅30で開く
 autocmd VimEnter * VimFiler -split -simple -winwidth=30 -no-quit
+"
+" 横方向の検索をf,F連打でできるようにする
+NeoBundle "rhysd/clever-f.vim"
 " 終了
 call neobundle#end()
 
