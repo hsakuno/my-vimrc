@@ -189,6 +189,11 @@ neobundle#append()				*neobundle#append()*
 neobundle#end()					*neobundle#end()*
 		End neobundle bundles configuration block.
 
+neobundle#add({repository}, {options})		*neobundle#add()*
+		The function version of |:NeoBundle|.
+		Note: You must call it in |neobundle#begin()| or
+		|neobundle#append()| block.
+
 neobundle#source({bundle-names})		*neobundle#source()*
 		Same as |:NeoBundleSource|.
 		{bundle-names} is a list of bundle names.
@@ -244,11 +249,11 @@ neobundle#load_toml({filename}, [{options}])
 		# TOML sample
 		[[plugins]]
 		# repository name is required.
-		repository = 'kana/vim-niceblock'
+		repo = 'kana/vim-niceblock'
 		mappings = '<Plug>'
 
 		[[plugins]]
-		repository = 'Shougo/neosnippet.vim'
+		repo = 'Shougo/neosnippet.vim'
 		depends = ['Shougo/neosnippet-snippets',
 		  'Shougo/context_filetype.vim']
 		insert = 1
@@ -261,11 +266,11 @@ neobundle#load_toml({filename}, [{options}])
 		  name = 'honza-snippet'
 
 		[[plugins]]
-		repository = 'Shougo/neobundle.vim'
+		repo = 'Shougo/neobundle.vim'
 		fetch = 1
 
 		[[plugins]]
-		repository = 'Shougo/vimproc.vim'
+		repo = 'Shougo/vimproc.vim'
 
 		  [plugins.build]
 		  windows = 'tools\\update-dll-mingw'
@@ -364,7 +369,7 @@ neobundle#tap({bundle-name})			 *neobundle#tap()*
 		  " Define plugin mappings, commands, ...
 		  map f <Plug>(foo)
 		  command! FOO call foo#foo()
-		
+
 		  call neobundle#untap()
 		endif
 <
@@ -376,17 +381,11 @@ neobundle#has_cache()			 *neobundle#has_cache()*
 		Note: It is deprecated.  You should use
 		|neobundle#load_cache()| instead of it.
 
-neobundle#has_fresh_cache()	 *neobundle#has_fresh_cache()*
-		Similar to |neobundle#has_cache|, but compares the
-		modification time of the cache file to your configuration file
-		({vimrc} or |$MYVIMRC|).
-		Note: It is deprecated.  You should use
-		|neobundle#load_cache()| instead of it.
-
-neobundle#load_cache([{vimrc}])			 *neobundle#load_cache()*
+neobundle#load_cache([{vimrcs}])		 *neobundle#load_cache()*
 		Load plugin configuration from the cache file,
 		which is located in `neobundle#get_rtp_dir() . '/cache'`.
-		{vimrc} is compared .vimrc file.  The default is |$MYVIMRC|.
+		{vimrcs} is a list of compared .vimrc and/or other configuration
+		files. The default is |$MYVIMRC|.
 
 		It returns 1, if the cache file is old or invalid or not
 		found.
@@ -396,6 +395,14 @@ neobundle#load_cache([{vimrc}])			 *neobundle#load_cache()*
 >
 	if neobundle#load_cache()
 	  " My Bundles here:
+	  " ...
+	  NeoBundleSaveCache
+	endif
+<
+		If you use multiple configuration files,
+>
+	if neobundle#load_cache($MYVIMRC, 'plugin.vim', 'plugin.toml')
+	  " My Bundles here or other files spcified as arguments
 	  " ...
 	  NeoBundleSaveCache
 	endif
@@ -438,7 +445,7 @@ COMMANDS 					*neobundle-commands*
 		Installs and updates plugins specified by {name}. {name} is
 		fuzzy-searched.  If {name} is omitted, all configured plugins
 		are installed and updated, except if they are outdated or have
-		the "stay_same" option set.
+		the "frozen" option set.
 		Note: {name}s are plugin names like "neobundle.vim", not
 		"Shougo/neobundle.vim".
 		Note: neobundle cannot use neovim async jobs feature in the
@@ -447,7 +454,7 @@ COMMANDS 					*neobundle-commands*
 
 :NeoBundleUpdate! [{name}...]			*:NeoBundleUpdate!*
 		Same as |:NeoBundleUpdate|, except that it disregards the
-		"stay_same" option.
+		"frozen" option.
 
 :NeoBundleClean [{bang} [{name}...]] 		*:NeoBundleClean*
 		Removes non-configured bundles that still exist in the bundle
@@ -457,7 +464,7 @@ COMMANDS 					*neobundle-commands*
 
 :NeoBundleReinstall [{name}...]		 	*:NeoBundleReinstall*
 		Reinstalls the bundles specified by {name}.
-		If the bundles are "nosync" type or local plugins, they are
+		If the bundles are "none" type or local plugins, they are
 		ignored.
 		Note: It removes the bundles and installs them.  It is the
 		dangerous command.
@@ -814,7 +821,7 @@ OPTIONS 					*neobundle-options*
 		based on {repository}.
 
 		Available types:
-		"nosync"    : No synchronous
+		"none"      : None repository
 		"raw"       : Raw plugin file ("script_type" attribute is
 		              needed)
 		"git"       : Git
@@ -1000,14 +1007,14 @@ OPTIONS 					*neobundle-options*
 		NeoBundle 'Valloric/YouCompleteMe', { 'build_commands' : 'cmake' }
 <
 
-						*neobundle-options-stay_same*
-		stay_same		(Number)
+						*neobundle-options-frozen*
+		frozen		(Number)
 		If set to 1, neobundle doesn't update it automatically when
 		|:NeoBundleUpdate| or ":Unite neobundle/update" is called with
 		no arguments. It is useful for outdated plugins that can no
 		longer be updated.
 >
-		NeoBundle 'Shougo/neobundle', { 'stay_same' : 1 }
+		NeoBundle 'Shougo/neobundle', { 'frozen' : 1 }
 <
 						*neobundle-options-lazy*
 		lazy			(Number)
@@ -1361,10 +1368,10 @@ OPTIONS 					*neobundle-options*
 		NeoBundle 'Shougo/vimshell', '3787e5'
 		NeoBundle 'Shougo/vimshell', 'master'
 <
-		If type is "nosync", neobundle does not update
+		If type is "none", neobundle does not update
 		automatically (like pathogen.vim). See also |NeoBundleLocal|.
 >
-		NeoBundle 'muttator', {'type' : 'nosync', 'base' : '~/.vim/bundle'}
+		NeoBundle 'muttator', {'type' : 'none', 'base' : '~/.vim/bundle'}
 <
 		Note: To use hg commands for git repository, please use this.
 >
@@ -1503,7 +1510,7 @@ neobundle/log
 				*neobundle-unite-source-neobundle-update*
 neobundle/update
 		Install and update configured plugins asynchronously, except
-		for outdated ones or those with the "stay_same" option.
+		for outdated ones or those with the "frozen" option.
 		It supports neovim async jobs feature.
 		Note: This source is the same as "neobundle/install:!".
 		Note: Installing the |vimproc| plugin or using neovim is
@@ -1746,8 +1753,8 @@ Q: I want to add absolute path in 'runtimepath' with |:NeoBundle| and
 |:NeoBundleLazy|.
 https://github.com/Shougo/neobundle.vim/issues/136
 
-A: You can use "nosync" type. >
-	NeoBundle '/absolute/path/to/plugin', { 'type' : 'nosync' }
+A: You can use "none" type. >
+	NeoBundle '/absolute/path/to/plugin', { 'type' : 'none' }
 
 Q: Problem with lazy loading of matchit plugin.
 https://github.com/Shougo/neobundle.vim/issues/153
