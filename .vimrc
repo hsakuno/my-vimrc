@@ -72,6 +72,9 @@ nnoremap * *zz
 nnoremap # #zz
 nnoremap g* g*zz
 nnoremap g# g#zz
+" ヤンクした後に削除してもヤンクした文字列を貼り付け
+nnoremap p "0p
+nnoremap P "0P
 
 " j, k による移動を折り返されたテキストでも自然に振る舞うように変更
 nnoremap j gj
@@ -220,6 +223,26 @@ if has('conceal')
 	set conceallevel=2 concealcursor=i
 endif
 
+NeoBundleLazy "Shougo/unite.vim", {
+      \ "autoload": {
+      \   "commands": ["Unite", "UniteWithBufferDir"]
+      \ }}
+NeoBundleLazy 'h1mesuke/unite-outline', {
+      \ "autoload": {
+      \   "unite_sources": ["outline"],
+      \ }}
+nnoremap [unite] <Nop>
+nmap U [unite]
+nnoremap <silent> [unite]f :<C-u>UniteWithBufferDir -buffer-name=files file<CR>
+nnoremap <silent> [unite]b :<C-u>Unite buffer<CR>
+nnoremap <silent> [unite]r :<C-u>Unite register<CR>
+nnoremap <silent> [unite]m :<C-u>Unite file_mru<CR>
+nnoremap <silent> [unite]c :<C-u>Unite bookmark<CR>
+nnoremap <silent> [unite]o :<C-u>Unite outline<CR>
+nnoremap <silent> [unite]t :<C-u>Unite tab<CR>
+nnoremap <silent> [unite]w :<C-u>Unite window<CR>
+nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
+
 NeoBundleLazy "Shougo/vimfiler", {
       \ "depends": ["Shougo/unite.vim"],
       \ "autoload": {
@@ -277,16 +300,25 @@ NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "autoload": {
       \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
-NeoBundle "thinca/vim-quickrun"
-NeoBundle "Shougo/vimproc"
-NeoBundle "osyo-manga/shabadou.vim"
-NeoBundle "osyo-manga/vim-watchdogs"
+"NeoBundle "thinca/vim-quickrun"
+"NeoBundle "Shougo/vimproc"
+"NeoBundle "osyo-manga/shabadou.vim"
+"NeoBundle "osyo-manga/vim-watchdogs"
 " シンタックスチェック後にquickfixを閉じる
 let g:quickrun_config = {
 \   "watchdogs_checker/_" : {
 \       "hook/close_quickfix/enable_exit" : 1,
 \   },
 \}
+NeoBundle 'hynek/vim-python-pep8-indent'
+NeoBundle 'Flake8-vim'
+NeoBundle 'tell-k/vim-autopep8'
+NeoBundle 'scrooloose/syntastic'
+"保存時に自動でチェック
+let g:PyFlakeOnWrite = 1
+let g:PyFlakeCheckers = 'pep8,pyflakes'
+let g:PyFlakeDefaultComplexity=10
+let g:syntastic_python_checkers = ['pyflakes', 'pep8']
 "call watchdogs#setup(g:quickrun_config)
 " エラー行をハイライト
 NeoBundle "cohama/vim-hier"
