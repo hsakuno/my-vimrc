@@ -15,13 +15,14 @@ set autoindent
 set tabstop=4
 set shiftwidth=4
 set smarttab
+" 0埋めされた数字も10進数としてインクリメント
+set nf=
 
 """ 検索関係
 set ignorecase          " 大文字小文字を区別しない
 set smartcase           " 検索文字に大文字がある場合は大文字小文字を区別
 set incsearch           " インクリメンタルサーチ
 set hlsearch            " 検索マッチテキストをハイライト
-
 
 """編集関係
 set shiftround          " '<'や'>'でインデントする際に'shiftwidth'の倍数に丸める
@@ -46,7 +47,7 @@ set list                " 不可視文字の可視化
 set number              " 行番号の表示
 set wrap                " 長いテキストの折り返し
 set textwidth=0         " 自動的に改行が入るのを無効化
-set colorcolumn=80      " その代わり80文字目にラインを入れる
+set colorcolumn=100      " その代わり80文字目にラインを入れる
 
 " 前時代的スクリーンベルを無効化
 set t_vb=
@@ -72,9 +73,11 @@ nnoremap * *zz
 nnoremap # #zz
 nnoremap g* g*zz
 nnoremap g# g#zz
-" ヤンクした後に削除してもヤンクした文字列を貼り付け
-nnoremap p "0p
-nnoremap P "0P
+
+" 削除キーでyankしない
+nnoremap x "_x
+nnoremap d "_d
+nnoremap D "_D
 
 " j, k による移動を折り返されたテキストでも自然に振る舞うように変更
 nnoremap j gj
@@ -112,6 +115,8 @@ nnoremap <silent> [toggle]t :setl expandtab!<CR>:setl expandtab?<CR>
 nnoremap <silent> [toggle]w :setl wrap!<CR>:setl wrap?<CR>
 " make, grep などのコマンド後に自動的にQuickFixを開く
 autocmd MyAutoCmd QuickfixCmdPost make,grep,grepadd,vimgrep copen
+" insert modeから抜けた時にnopaste実行
+autocmd InsertLeave * set nopaste
 
 " QuickFixおよびHelpでは q でバッファを閉じる
 autocmd MyAutoCmd FileType help,qf nnoremap <buffer> q <C-w>c
@@ -185,23 +190,12 @@ function! s:hooks.on_source(bundle)
 	let g:indent_guides_guide_size = 1
 endfunction
 
+" gitをvim上から使えるようにする
+NeoBundle 'tpope/vim-fugitive'
 
 NeoBundle 'tpope/vim-surround'
 NeoBundle 'vim-scripts/Align'
 NeoBundle 'vim-scripts/YankRing.vim'
-
-"NeoBundleLazy "thinca/vim-quickrun", {
-"      \ "autoload": {
-"      \   "mappings": [['nxo', '<Plug>(quickrun)']]
-"      \ }}
-"nmap <Leader>r <Plug>(quickrun)
-"let s:hooks = neobundle#get_hooks("vim-quickrun")
-"function! s:hooks.on_source(bundle)
-"	let g:quickrun_config = {
-"				\ "*": {"runner": "remote/vimproc"},
-"				\ }
-"endfunction
-
 NeoBundle "honza/vim-snippets"
 NeoBundle "Shougo/neosnippet.vim"
 " Plugin key-mappings.
@@ -265,14 +259,8 @@ function! s:hooks.on_source(bundle)
 	endfunction
 endfunction
 
-NeoBundleLazy "davidhalter/jedi-vim", {
-      \ "autoload": {
-      \   "filetypes": ["python", "python3", "djangohtml"],
-      \ },
-      \ "build": {
-      \   "mac": "pip install jedi",
-      \   "unix": "pip install jedi",
-      \ }}
+NeoBundle "davidhalter/jedi-vim"
+
 let s:hooks = neobundle#get_hooks("jedi-vim")
 function! s:hooks.on_source(bundle)
 	 " jediにvimの設定を任せると'completeopt+=preview'するので
@@ -300,10 +288,6 @@ NeoBundleLazy "lambdalisue/vim-pyenv", {
       \ "autoload": {
       \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
-"NeoBundle "thinca/vim-quickrun"
-"NeoBundle "Shougo/vimproc"
-"NeoBundle "osyo-manga/shabadou.vim"
-"NeoBundle "osyo-manga/vim-watchdogs"
 " シンタックスチェック後にquickfixを閉じる
 let g:quickrun_config = {
 \   "watchdogs_checker/_" : {
@@ -311,20 +295,40 @@ let g:quickrun_config = {
 \   },
 \}
 NeoBundle 'hynek/vim-python-pep8-indent'
-NeoBundle 'Flake8-vim'
-NeoBundle 'tell-k/vim-autopep8'
 NeoBundle 'scrooloose/syntastic'
-"保存時に自動でチェック
-let g:PyFlakeOnWrite = 1
-let g:PyFlakeCheckers = 'pep8,pyflakes'
-let g:PyFlakeDefaultComplexity=10
-let g:syntastic_python_checkers = ['pyflakes', 'pep8']
-"call watchdogs#setup(g:quickrun_config)
-" エラー行をハイライト
-NeoBundle "cohama/vim-hier"
-if has("gui_running")
-	highlight SpellBad term=underline gui=undercurl guisp=Orange 
-endif
+let g:syntastic_python_checkers = ['flake8']
+" 1line 80char 制限はさすがにキツイので100文字にする
+let g:syntastic_python_flake8_args="--max-line-length=100"
+
+" pep8自動修正
+
+function! Preserve(command)
+    " Save the last search.
+    let search = @/
+    " Save the current cursor position.
+    let cursor_position = getpos('.')
+    " Save the current window position.
+    normal! H
+    let window_position = getpos('.')
+    call setpos('.', cursor_position)
+    " Execute the command.
+    execute a:command
+    " Restore the last search.
+    let @/ = search
+    " Restore the previous window position.
+    call setpos('.', window_position)
+    normal! zt
+    " Restore the previous cursor position.
+    call setpos('.', cursor_position)
+endfunction
+
+function! Autopep8()
+    call Preserve(':silent %!autopep8 --max-line-length 99 -')
+endfunction
+
+" Shift + F で自動修正
+autocmd FileType python nnoremap <S-f> :call Autopep8()<CR>
+
 " エラーメッセージ表示
 NeoBundle "dannyob/quickfixstatus"
 " 畳み込み
