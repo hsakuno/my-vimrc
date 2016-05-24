@@ -259,7 +259,8 @@ function! s:hooks.on_source(bundle)
 	endfunction
 endfunction
 
-NeoBundle "davidhalter/jedi-vim"
+NeoBundleLazy "davidhalter/jedi-vim", {
+    \ "autoload": { "filetypes": [ "python", "python3", "djangohtml"] }}
 
 let s:hooks = neobundle#get_hooks("jedi-vim")
 function! s:hooks.on_source(bundle)
@@ -284,7 +285,6 @@ NeoBundleLazy "lambdalisue/vim-django-support", {
       \ }}
 
 NeoBundleLazy "lambdalisue/vim-pyenv", {
-      \ "depends": ['davidhalter/jedi-vim'],
       \ "autoload": {
       \   "filetypes": ["python", "python3","djangohtml"]
       \ }}
@@ -345,6 +345,37 @@ autocmd VimEnter * VimFiler -split -simple -winwidth=30 -no-quit
 "
 " 横方向の検索をf,F連打でできるようにする
 NeoBundle "rhysd/clever-f.vim"
+" ruby用設定
+NeoBundle 'Shougo/neocomplcache'
+NeoBundle 'Shougo/vimproc'
+let g:rsenseUseOmniFunc = 1
+let g:neocomplcache_enable_at_startup = 1
+let g:neocomplcache#sources#rsense#home_directory = "/usr/local/Cellar/rsense/0.3/libexec"
+let g:rsenseHome = "/usr/local/Cellar/rsense/0.3/libexec"
+NeoBundle 'Shougo/vimproc.vim', {
+\ 'build' : {
+\     'windows' : 'tools\\update-dll-mingw',
+\     'cygwin' : 'make -f make_cygwin.mak',
+\     'mac' : 'make',
+\     'linux' : 'make',
+\     'unix' : 'gmake',
+\    },
+\ }
+NeoBundleLazy 'marcus/rsense', {
+      \ 'autoload': {
+      \   'filetypes': 'ruby',
+      \ },
+      \ }
+NeoBundle 'Shougo/neocomplcache-rsense.vim', {
+      \ 'depends': ['Shougo/neocomplcache.vim', 'marcus/rsense'],
+      \ }
+inoremap <expr> <C-Space> pumvisible() \|\| &omnifunc == '' ?
+\ "\<lt>C-n>" :
+\ "\<lt>C-x>\<lt>C-o><c-r>=pumvisible() ?" .
+\ "\"\\<lt>c-n>\\<lt>c-p>\\<lt>c-n>\" :" .
+\ "\" \\<lt>bs>\\<lt>C-n>\"\<CR>"
+imap <C-@> <C-Space>
+
 " 終了
 call neobundle#end()
 
